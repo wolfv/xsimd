@@ -38,6 +38,7 @@ namespace xsimd
         batch_bool(bool b0, bool b1, bool b2, bool b3, bool b4, bool b5, bool b6, bool b7,
                    bool b8, bool b9, bool b10, bool b11, bool b12, bool b13, bool b14, bool b15);
         batch_bool(const __m512i& rhs);
+        batch_bool(const __mmask16& rhs);
         batch_bool& operator=(const __m512i& rhs);
 
         operator __m512i() const;
@@ -168,6 +169,12 @@ namespace xsimd
     {
     }
 
+    inline batch_bool<int32_t, 16>::batch_bool(const __mmask16& rhs)
+        : m_value(_mm512_broadcastmw_epi32(rhs))
+    {
+    }
+
+
     inline batch_bool<int32_t, 16>::batch_bool(bool b0, bool b1, bool b2, bool b3, bool b4, bool b5, bool b6, bool b7,
                                                bool b8, bool b9, bool b10, bool b11, bool b12, bool b13, bool b14, bool b15)
         : m_value(_mm512_setr_epi32(-(int32_t)b0, -(int32_t)b1, -(int32_t)b2, -(int32_t)b3, -(int32_t)b4, -(int32_t)b5, -(int32_t)b6, -(int32_t)b7,
@@ -218,22 +225,23 @@ namespace xsimd
 
     inline batch_bool<int32_t, 16> operator==(const batch_bool<int32_t, 16>& lhs, const batch_bool<int32_t, 16>& rhs)
     {
-        // return _mm512_cmpeq_epi32(lhs, rhs);
+        // Note this uses mask broadcasting constructor
+        return _mm512_cmpeq_epi32_mask(lhs, rhs);
     }
 
     inline batch_bool<int32_t, 16> operator!=(const batch_bool<int32_t, 16>& lhs, const batch_bool<int32_t, 16>& rhs)
     {
-        return ~(lhs == rhs);
+        return _mm512_cmpeq_epi32_mask(lhs, rhs);
     }
 
     inline bool all(const batch_bool<int32_t, 16>& rhs)
     {
-        // return _mm512_testc_si512(rhs, batch_bool<int32_t, 16>(true)) != 0;
+        _mm512_test_epi32_mask(rhs, batch_bool<int32_t, 16>(true)) != 0x0f;
     }
 
     inline bool any(const batch_bool<int32_t, 16>& rhs)
     {
-        // return !_mm512_testz_si512(rhs, rhs);
+        _mm512_test_epi64_mask(rhs, rhs) != 0;
     }
 
     /************************************
@@ -328,31 +336,31 @@ namespace xsimd
 
     inline batch<int32_t, 16>& batch<int32_t, 16>::load_aligned(const float* src)
     {
-        // m_value = _mm256_cvtps_epi32(_mm256_load_ps(src));
+        m_value = _mm512_cvtps_epi32(_mm512_load_ps(src));
         return *this;
     }
 
     inline batch<int32_t, 16>& batch<int32_t, 16>::load_unaligned(const float* src)
     {
-        // m_value = _mm256_cvtps_epi32(_mm256_loadu_ps(src));
+        m_value = _mm512_cvtps_epi32(_mm512_loadu_ps(src));
         return *this;
     }
 
     inline batch<int32_t, 16>& batch<int32_t, 16>::load_aligned(const double* src)
     {
-        // __m128i tmp1 = _mm256_cvtpd_epi32(_mm256_load_pd(src));
-        // __m128i tmp2 = _mm256_cvtpd_epi32(_mm256_load_pd(src + 4));
-        // m_value = _mm256_castsi128_si256(tmp1);
-        // m_value = _mm256_insertf128_si256(m_value, tmp2, 1);
+        __m256i tmp1 = _mm512_cvtpd_epi32(_mm512_load_pd(src));
+        __m256i tmp2 = _mm512_cvtpd_epi32(_mm512_load_pd(src + 8));
+        m_value = _mm512_castsi256_si512(tmp1);
+        m_value = _mm512_inserti32x8(m_value, tmp2, 1);
         return *this;
     }
 
     inline batch<int32_t, 16>& batch<int32_t, 16>::load_unaligned(const double* src)
     {
-        // __m128i tmp1 = _mm256_cvtpd_epi32(_mm256_loadu_pd(src));
-        // __m128i tmp2 = _mm256_cvtpd_epi32(_mm256_loadu_pd(src + 4));
-        // m_value = _mm256_castsi128_si256(tmp1);
-        // m_value = _mm256_insertf128_si256(m_value, tmp2, 1);
+        __m256i tmp1 = _mm512_cvtpd_epi32(_mm512_loadu_pd(src));
+        __m256i tmp2 = _mm512_cvtpd_epi32(_mm512_loadu_pd(src + 8));
+        m_value = _mm512_castsi256_si512(tmp1);
+        m_value = _mm512_inserti32x8(m_value, tmp2, 1);
         return *this;
     }
 
@@ -395,28 +403,28 @@ namespace xsimd
 
     inline void batch<int32_t, 16>::store_aligned(float* dst) const
     {
-        // _mm256_store_ps(dst, _mm256_cvtepi32_ps(m_value));
+        _mm512_store_ps(dst, _mm512_cvtepi32_ps(m_value));
     }
 
     inline void batch<int32_t, 16>::store_unaligned(float* dst) const
     {
-        // _mm256_storeu_ps(dst, _mm256_cvtepi32_ps(m_value));
+        _mm512_storeu_ps(dst, _mm512_cvtepi32_ps(m_value));
     }
 
     inline void batch<int32_t, 16>::store_aligned(double* dst) const
     {
-        // __m128i tmp1 = _mm256_extractf128_si256(m_value, 0);
-        // __m128i tmp2 = _mm256_extractf128_si256(m_value, 1);
-        // _mm256_store_pd(dst, _mm256_cvtepi32_pd(tmp1));
-        // _mm256_store_pd(dst + 4 , _mm256_cvtepi32_pd(tmp2));
+        __m256i tmp1 = _mm512_extracti32x8_epi32(m_value, 0);
+        __m256i tmp2 = _mm512_extracti32x8_epi32(m_value, 1);
+        _mm512_store_pd(dst, _mm512_cvtepi32_pd(tmp1));
+        _mm512_store_pd(dst + 8 , _mm512_cvtepi32_pd(tmp2));
     }
 
     inline void batch<int32_t, 16>::store_unaligned(double* dst) const
     {
-        // __m128i tmp1 = _mm256_extractf128_si256(m_value, 0);
-        // __m128i tmp2 = _mm256_extractf128_si256(m_value, 1);
-        // _mm256_storeu_pd(dst, _mm256_cvtepi32_pd(tmp1));
-        // _mm256_storeu_pd(dst + 4, _mm256_cvtepi32_pd(tmp2));
+        __m256i tmp1 = _mm512_extracti32x8_epi32(m_value, 0);
+        __m256i tmp2 = _mm512_extracti32x8_epi32(m_value, 1);
+        _mm512_store_pd(dst, _mm512_cvtepi32_pd(tmp1));
+        _mm512_store_pd(dst + 8 , _mm512_cvtepi32_pd(tmp2));
     }
 
     inline int32_t batch<int32_t, 16>::operator[](std::size_t index) const
@@ -453,112 +461,67 @@ namespace xsimd
 
     inline batch_bool<int32_t, 16> operator==(const batch<int32_t, 16>& lhs, const batch<int32_t, 16>& rhs)
     {
-        // return _mm512_cmpeq_epi32(lhs, rhs);
-        return batch_bool<int32_t, 16>{true};
+        return _mm512_cmp_epu32_mask(lhs, rhs, _MM_CMPINT_EQ);
     }
 
     inline batch_bool<int32_t, 16> operator!=(const batch<int32_t, 16>& lhs, const batch<int32_t, 16>& rhs)
     {
-        return ~(lhs == rhs);
+        return _mm512_cmp_epu32_mask(lhs, rhs, _MM_CMPINT_NE);
     }
 
     inline batch_bool<int32_t, 16> operator<(const batch<int32_t, 16>& lhs, const batch<int32_t, 16>& rhs)
     {
-// #if XSIMD_X86_INSTR_SET >= XSIMD_X86_AVX2_VERSION
-//         return _mm256_cmpgt_epi32(rhs, lhs);
-// #else
-//         XSIMD_APPLY_SSE_FUNCTION(_mm_cmpgt_epi32, rhs, lhs);
-// #endif
-        return batch_bool<int32_t, 16>{true};
+        return _mm512_cmp_epu32_mask(lhs, rhs, _MM_CMPINT_GT);
     }
 
     inline batch_bool<int32_t, 16> operator<=(const batch<int32_t, 16>& lhs, const batch<int32_t, 16>& rhs)
     {
-        return ~(rhs < lhs);
+        return _mm512_cmp_epu32_mask(lhs, rhs, _MM_CMPINT_GE);
     }
 
     inline batch<int32_t, 16> operator&(const batch<int32_t, 16>& lhs, const batch<int32_t, 16>& rhs)
     {
-        // return batch<int32_t, 16>{0};
-
-// #if XSIMD_X86_INSTR_SET >= XSIMD_X86_AVX2_VERSION
-//         return _mm256_and_si256(lhs, rhs);
-// #else
-//         XSIMD_APPLY_SSE_FUNCTION(_mm_and_si128, lhs, rhs);
-// #endif
+        return _mm512_and_si512(lhs, rhs);
     }
 
     inline batch<int32_t, 16> operator|(const batch<int32_t, 16>& lhs, const batch<int32_t, 16>& rhs)
     {
-// #if XSIMD_X86_INSTR_SET >= XSIMD_X86_AVX2_VERSION
-//         return _mm256_or_si256(lhs, rhs);
-// #else
-//         XSIMD_APPLY_SSE_FUNCTION(_mm_or_si128, lhs, rhs);
-// #endif
+        return _mm512_or_si512(lhs, rhs);
     }
 
     inline batch<int32_t, 16> operator^(const batch<int32_t, 16>& lhs, const batch<int32_t, 16>& rhs)
     {
-// #if XSIMD_X86_INSTR_SET >= XSIMD_X86_AVX2_VERSION
-//         return _mm256_xor_si256(lhs, rhs);
-// #else
-//         XSIMD_APPLY_SSE_FUNCTION(_mm_xor_si128, lhs, rhs);
-// #endif
+        return _mm512_xor_si512(lhs, rhs);
     }
 
     inline batch<int32_t, 16> operator~(const batch<int32_t, 16>& rhs)
     {
-// #if XSIMD_X86_INSTR_SET >= XSIMD_X86_AVX2_VERSION
-//         return _mm256_xor_si256(rhs, _mm256_set1_epi32(-1));
-// #else
-//         XSIMD_SPLIT_AVX(rhs);
-//         __m128i res_low = _mm_xor_si128(rhs_low, _mm_set1_epi32(-1));
-//         __m128i res_high = _mm_xor_si128(rhs_high, _mm_set1_epi32(-1));
-//         XSIMD_RETURN_MERGED_SSE(res_low, res_high);
-// #endif
+        return _mm512_xor_si512(rhs, _mm512_set1_epi32(-1));
     }
 
     inline batch<int32_t, 16> bitwise_andnot(const batch<int32_t, 16>& lhs, const batch<int32_t, 16>& rhs)
     {
-// #if XSIMD_X86_INSTR_SET >= XSIMD_X86_AVX2_VERSION
-//         return _mm256_andnot_si256(lhs, rhs);
-// #else
-//         XSIMD_APPLY_SSE_FUNCTION(_mm_andnot_si128, lhs, rhs);
-// #endif
+        return _mm512_andnot_si512(lhs, rhs);
     }
 
     inline batch<int32_t, 16> min(const batch<int32_t, 16>& lhs, const batch<int32_t, 16>& rhs)
     {
-// #if XSIMD_X86_INSTR_SET >= XSIMD_X86_AVX2_VERSION
-//         return _mm256_min_epi32(lhs, rhs);
-// #else
-//         XSIMD_APPLY_SSE_FUNCTION(_mm_min_epi32, lhs, rhs);
-// #endif
+        return _mm512_min_epi32(lhs, rhs);
     }
 
     inline batch<int32_t, 16> max(const batch<int32_t, 16>& lhs, const batch<int32_t, 16>& rhs)
     {
-// #if XSIMD_X86_INSTR_SET >= XSIMD_X86_AVX2_VERSION
-//         return _mm256_max_epi32(lhs, rhs);
-// #else
-//         XSIMD_APPLY_SSE_FUNCTION(_mm_max_epi32, lhs, rhs);
-// #endif
+        return _mm512_max_epi32(lhs, rhs);
     }
 
     inline batch<int32_t, 16> abs(const batch<int32_t, 16>& rhs)
     {
-// #if XSIMD_X86_INSTR_SET >= XSIMD_X86_AVX2_VERSION
-//         return _mm256_sign_epi32(rhs, rhs);
-// #else
-//         XSIMD_SPLIT_AVX(rhs);
-//         __m128i res_low = _mm_sign_epi32(rhs_low, rhs_low);
-//         __m128i res_high = _mm_sign_epi32(rhs_high, rhs_high);
-//         XSIMD_RETURN_MERGED_SSE(res_low, res_high);
-// #endif
+        return _mm512_abs_epi32(rhs);
     }
 
     inline batch<int32_t, 16> fma(const batch<int32_t, 16>& x, const batch<int32_t, 16>& y, const batch<int32_t, 16>& z)
     {
+        // Note: support for _mm512_fmadd_epi32 in KNC ?
         return x * y + z;
     }
 
@@ -579,45 +542,18 @@ namespace xsimd
 
     inline int32_t hadd(const batch<int32_t, 16>& rhs)
     {
-// #if XSIMD_X86_INSTR_SET >= XSIMD_X86_AVX2_VERSION
-//         __m512i tmp1 = _mm256_hadd_epi32(rhs, rhs);
-//         __m512i tmp2 = _mm256_hadd_epi32(tmp1, tmp1);
-//         __m128i tmp3 = _mm256_extracti128_si256(tmp2, 1);
-//         __m128i tmp4 = _mm_add_epi32(_mm256_castsi256_si128(tmp2), tmp3);
-//         return _mm_cvtsi128_si32(tmp4);
-// #else
-//         XSIMD_SPLIT_AVX(rhs);
-//         __m128i tmp1 = _mm_add_epi32(rhs_low, rhs_high);
-//         __m128i tmp2 = _mm_hadd_epi32(tmp1, tmp1);
-//         __m128i tmp3 = _mm_hadd_epi32(tmp2, tmp2);
-//         return _mm_cvtsi128_si32(tmp3);
-// #endif
+        return _mm512_reduce_add_epi32(rhs);
     }
 
     inline batch<int32_t, 16> select(const batch_bool<int32_t, 16>& cond, const batch<int32_t, 16>& a, const batch<int32_t, 16>& b)
     {
-// #if XSIMD_X86_INSTR_SET >= XSIMD_X86_AVX2_VERSION
-//         return _mm256_blendv_epi8(b, a, cond);
-// #else
-//         XSIMD_SPLIT_AVX(cond);
-//         XSIMD_SPLIT_AVX(a);
-//         XSIMD_SPLIT_AVX(b);
-//         __m128i res_low = _mm_blendv_epi8(b_low, a_low, cond_low);
-//         __m128i res_high = _mm_blendv_epi8(b_high, a_high, cond_high);
-//         XSIMD_RETURN_MERGED_SSE(res_low, res_high);
-// #endif
+        // BIG QUESTIONMARK
+        // return _mm512_mask_blend_epi32(cond, a, b);
     }
 
     inline batch<int32_t, 16> operator<<(const batch<int32_t, 16>& lhs, int32_t rhs)
     {
-// #if XSIMD_X86_INSTR_SET >= XSIMD_X86_AVX2_VERSION
-//         return _mm256_slli_epi32(lhs, rhs);
-// #else
-//         XSIMD_SPLIT_AVX(lhs);
-//         __m128i res_low = _mm_slli_epi32(lhs_low, rhs);
-//         __m128i res_high = _mm_slli_epi32(lhs_high, rhs);
-//         XSIMD_RETURN_MERGED_SSE(res_low, res_high);
-// #endif
+        return _mm512_slli_epi32(lhs, rhs);
     }
 
     inline batch<int32_t, 16> operator>>(const batch<int32_t, 16>& lhs, int32_t rhs)
@@ -627,30 +563,12 @@ namespace xsimd
 
     inline batch<int32_t, 16> operator<<(const batch<int32_t, 16>& lhs, const batch<int32_t, 16>& rhs)
     {
-        // return batch<int32_t, 16>{
-        //     lhs[0] << rhs[0],
-        //     lhs[1] << rhs[1],
-        //     lhs[2] << rhs[2],
-        //     lhs[3] << rhs[3],
-        //     lhs[4] << rhs[4],
-        //     lhs[5] << rhs[5],
-        //     lhs[6] << rhs[6],
-        //     lhs[7] << rhs[7]
-        //     };
+        return _mm512_sllv_epi32(lhs, rhs);
     }
 
     inline batch<int32_t, 16> operator>>(const batch<int32_t, 16>& lhs, const batch<int32_t, 16>& rhs)
     {
-        // return batch<int32_t, 16>{
-        //     lhs[0] >> rhs[0],
-        //     lhs[1] >> rhs[1],
-        //     lhs[2] >> rhs[2],
-        //     lhs[3] >> rhs[3],
-        //     lhs[4] >> rhs[4],
-        //     lhs[5] >> rhs[5],
-        //     lhs[6] >> rhs[6],
-        //     lhs[7] >> rhs[7]
-        //     };
+        return _mm512_srlv_epi32(lhs, rhs);
     }
 }
 
