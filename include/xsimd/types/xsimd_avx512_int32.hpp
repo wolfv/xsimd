@@ -29,36 +29,20 @@ namespace xsimd
     };
 
     template <>
-    class batch_bool<int32_t, 16> : public simd_batch_bool<batch_bool<int32_t, 16>>
+    class batch_bool<int32_t, 16> : 
+        public batch_bool_avx512<__mmask16>,
+        public simd_batch_bool<batch_bool<int32_t, 16>>
     {
     public:
+        using base_class = batch_bool_avx512<__mmask16>;
+        using base_class::base_class;
 
-        batch_bool();
-        explicit batch_bool(bool b);
-        batch_bool(bool b0, bool b1, bool b2, bool b3, bool b4, bool b5, bool b6, bool b7,
-                   bool b8, bool b9, bool b10, bool b11, bool b12, bool b13, bool b14, bool b15);
-        batch_bool(const __m512i& rhs);
-        batch_bool(const __mmask16& rhs);
-        batch_bool& operator=(const __m512i& rhs);
-
-        operator __m512i() const;
-
-    private:
-
-        __m512i m_value;
+        batch_bool(bool b0, bool b1,  bool b2,  bool b3,  bool b4,  bool b5,  bool b6,  bool b7,
+                   bool b8, bool b9, bool b10, bool b11, bool b12, bool b13, bool b14, bool b15)
+            : base_class({{b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15}})
+        {
+        }
     };
-
-    batch_bool<int32_t, 16> operator&(const batch_bool<int32_t, 16>& lhs, const batch_bool<int32_t, 16>& rhs);
-    batch_bool<int32_t, 16> operator|(const batch_bool<int32_t, 16>& lhs, const batch_bool<int32_t, 16>& rhs);
-    batch_bool<int32_t, 16> operator^(const batch_bool<int32_t, 16>& lhs, const batch_bool<int32_t, 16>& rhs);
-    batch_bool<int32_t, 16> operator~(const batch_bool<int32_t, 16>& rhs);
-    batch_bool<int32_t, 16> bitwise_andnot(const batch_bool<int32_t, 16>& lhs, const batch_bool<int32_t, 16>& rhs);
-
-    batch_bool<int32_t, 16> operator==(const batch_bool<int32_t, 16>& lhs, const batch_bool<int32_t, 16>& rhs);
-    batch_bool<int32_t, 16> operator!=(const batch_bool<int32_t, 16>& lhs, const batch_bool<int32_t, 16>& rhs);
-
-    bool all(const batch_bool<int32_t, 16>& rhs);
-    bool any(const batch_bool<int32_t, 16>& rhs);
 
     /*********************
      * batch<int32_t, 16> *
@@ -155,94 +139,6 @@ namespace xsimd
     batch<int32_t, 16> operator>>(const batch<int32_t, 16>& lhs, int32_t rhs);
     batch<int32_t, 16> operator<<(const batch<int32_t, 16>& lhs, const batch<int32_t, 16>& rhs);
     batch<int32_t, 16> operator>>(const batch<int32_t, 16>& lhs, const batch<int32_t, 16>& rhs);
-
-    /*****************************************
-     * batch_bool<int32_t, 16> implementation *
-     *****************************************/
-
-    inline batch_bool<int32_t, 16>::batch_bool()
-    {
-    }
-
-    inline batch_bool<int32_t, 16>::batch_bool(bool b)
-        : m_value(_mm512_set1_epi32(-(int32_t)b))
-    {
-    }
-
-    inline batch_bool<int32_t, 16>::batch_bool(const __mmask16& rhs)
-        : m_value(_mm512_broadcastmw_epi32(rhs))
-    {
-    }
-
-
-    inline batch_bool<int32_t, 16>::batch_bool(bool b0, bool b1, bool b2, bool b3, bool b4, bool b5, bool b6, bool b7,
-                                               bool b8, bool b9, bool b10, bool b11, bool b12, bool b13, bool b14, bool b15)
-        : m_value(_mm512_setr_epi32(-(int32_t)b0, -(int32_t)b1, -(int32_t)b2, -(int32_t)b3, -(int32_t)b4, -(int32_t)b5, -(int32_t)b6, -(int32_t)b7,
-                                    -(int32_t)b8, -(int32_t)b9, -(int32_t)b10, -(int32_t)b11, -(int32_t)b12, -(int32_t)b13, -(int32_t)b14, -(int32_t)b15))
-    {
-    }
-
-    inline batch_bool<int32_t, 16>::batch_bool(const __m512i& rhs)
-        : m_value(rhs)
-    {
-    }
-
-    inline batch_bool<int32_t, 16>& batch_bool<int32_t, 16>::operator=(const __m512i& rhs)
-    {
-        m_value = rhs;
-        return *this;
-    }
-
-    inline batch_bool<int32_t, 16>::operator __m512i() const
-    {
-        return m_value;
-    }
-
-    inline batch_bool<int32_t, 16> operator&(const batch_bool<int32_t, 16>& lhs, const batch_bool<int32_t, 16>& rhs)
-    {
-        return _mm512_and_si512(lhs, rhs);
-    }
-
-    inline batch_bool<int32_t, 16> operator|(const batch_bool<int32_t, 16>& lhs, const batch_bool<int32_t, 16>& rhs)
-    {
-        return _mm512_or_si512(lhs, rhs);
-    }
-
-    inline batch_bool<int32_t, 16> operator^(const batch_bool<int32_t, 16>& lhs, const batch_bool<int32_t, 16>& rhs)
-    {
-        return _mm512_xor_si512(lhs, rhs);
-    }
-
-    inline batch_bool<int32_t, 16> operator~(const batch_bool<int32_t, 16>& rhs)
-    {
-        return _mm512_xor_si512(rhs, _mm512_set1_epi32(-1));
-    }
-
-    inline batch_bool<int32_t, 16> bitwise_andnot(const batch_bool<int32_t, 16>& lhs, const batch_bool<int32_t, 16>& rhs)
-    {
-        return _mm512_andnot_si512(lhs, rhs);
-    }
-
-    inline batch_bool<int32_t, 16> operator==(const batch_bool<int32_t, 16>& lhs, const batch_bool<int32_t, 16>& rhs)
-    {
-        // Note this uses mask broadcasting constructor
-        return _mm512_cmpeq_epi32_mask(lhs, rhs);
-    }
-
-    inline batch_bool<int32_t, 16> operator!=(const batch_bool<int32_t, 16>& lhs, const batch_bool<int32_t, 16>& rhs)
-    {
-        return _mm512_cmpeq_epi32_mask(lhs, rhs);
-    }
-
-    inline bool all(const batch_bool<int32_t, 16>& rhs)
-    {
-        _mm512_test_epi32_mask(rhs, batch_bool<int32_t, 16>(true)) != 0x0f;
-    }
-
-    inline bool any(const batch_bool<int32_t, 16>& rhs)
-    {
-        _mm512_test_epi64_mask(rhs, rhs) != 0;
-    }
 
     /************************************
      * batch<int32_t, 16> implementation *
@@ -471,12 +367,12 @@ namespace xsimd
 
     inline batch_bool<int32_t, 16> operator<(const batch<int32_t, 16>& lhs, const batch<int32_t, 16>& rhs)
     {
-        return _mm512_cmp_epu32_mask(lhs, rhs, _MM_CMPINT_GT);
+        return _mm512_cmp_epu32_mask(lhs, rhs, _MM_CMPINT_LT);
     }
 
     inline batch_bool<int32_t, 16> operator<=(const batch<int32_t, 16>& lhs, const batch<int32_t, 16>& rhs)
     {
-        return _mm512_cmp_epu32_mask(lhs, rhs, _MM_CMPINT_GE);
+        return _mm512_cmp_epu32_mask(lhs, rhs, _MM_CMPINT_LE);
     }
 
     inline batch<int32_t, 16> operator&(const batch<int32_t, 16>& lhs, const batch<int32_t, 16>& rhs)
@@ -547,8 +443,7 @@ namespace xsimd
 
     inline batch<int32_t, 16> select(const batch_bool<int32_t, 16>& cond, const batch<int32_t, 16>& a, const batch<int32_t, 16>& b)
     {
-        // BIG QUESTIONMARK
-        // return _mm512_mask_blend_epi32(cond, a, b);
+        return _mm512_mask_blend_epi32(cond, b, a);
     }
 
     inline batch<int32_t, 16> operator<<(const batch<int32_t, 16>& lhs, int32_t rhs)
