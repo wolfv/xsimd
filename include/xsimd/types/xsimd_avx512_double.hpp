@@ -25,16 +25,15 @@ namespace xsimd
         using value_type = bool;
         static constexpr std::size_t size = 8;
         using batch_type = batch<double, 8>;
-        static constexpr std::size_t align = 32;
     };
 
     template <>
     class batch_bool<double, 8> : 
-        public batch_bool_avx512<__mmask8>,
+        public batch_bool_avx512<__mmask8, batch_bool<double, 8>>,
         public simd_batch_bool<batch_bool<double, 8>>
     {
     public:
-        using base_class = batch_bool_avx512<__mmask8>;
+        using base_class = batch_bool_avx512<__mmask8, batch_bool<double, 8>>;
         using base_class::base_class;
 
         batch_bool(bool b0, bool b1, bool b2, bool b3, bool b4, bool b5, bool b6, bool b7)
@@ -42,6 +41,8 @@ namespace xsimd
         {
         }
     };
+
+    GENERATE_AVX512_BOOL_OPS(double, 8);
 
     /********************
      * batch<double, 8> *
@@ -53,7 +54,6 @@ namespace xsimd
         using value_type = double;
         static constexpr std::size_t size = 8;
         using batch_bool_type = batch_bool<double, 8>;
-        static constexpr std::size_t align = 32;
     };
 
     template <>

@@ -1,3 +1,4 @@
+
 /***************************************************************************
 * Copyright (c) 2016, Johan Mabille and Sylvain Corlay                     *
 *                                                                          *
@@ -30,11 +31,11 @@ namespace xsimd
 
     template <>
     class batch_bool<int64_t, 8> : 
-        public batch_bool_avx512<__mmask8>,
+        public batch_bool_avx512<__mmask8, batch_bool<int64_t, 8>>,
         public simd_batch_bool<batch_bool<int64_t, 8>>
     {
     public:
-        using base_class = batch_bool_avx512<__mmask8>;
+        using base_class = batch_bool_avx512<__mmask8, batch_bool<int64_t, 8>>;
         using base_class::base_class;
 
         batch_bool(bool b0, bool b1,  bool b2,  bool b3,  bool b4,  bool b5,  bool b6,  bool b7)
@@ -42,6 +43,8 @@ namespace xsimd
         {
         }
     };
+
+    GENERATE_AVX512_BOOL_OPS(int64_t, 8);
 
     /*********************
      * batch<int64_t, 8> *
@@ -53,7 +56,6 @@ namespace xsimd
         using value_type = int64_t;
         static constexpr std::size_t size = 8;
         using batch_bool_type = batch_bool<int64_t, 8>;
-        static constexpr std::size_t align = 64;
     };
 
     template <>
@@ -321,12 +323,12 @@ namespace xsimd
 
     inline batch_bool<int64_t, 8> operator<(const batch<int64_t, 8>& lhs, const batch<int64_t, 8>& rhs)
     {
-        return _mm512_cmp_epi64_mask(lhs, rhs, _MM_CMPINT_GT);
+        return _mm512_cmp_epi64_mask(lhs, rhs, _MM_CMPINT_LT);
     }
 
     inline batch_bool<int64_t, 8> operator<=(const batch<int64_t, 8>& lhs, const batch<int64_t, 8>& rhs)
     {
-        return _mm512_cmp_epi64_mask(lhs, rhs, _MM_CMPINT_GE);
+        return _mm512_cmp_epi64_mask(lhs, rhs, _MM_CMPINT_LE);
     }
 
     inline batch<int64_t, 8> operator&(const batch<int64_t, 8>& lhs, const batch<int64_t, 8>& rhs)
@@ -410,15 +412,15 @@ namespace xsimd
         return _mm512_srli_epi64(lhs, rhs);
     }
 
-    // inline batch<int64_t, 8> operator<<(const batch<int64_t, 8>& lhs, const batch<int64_t, 8>& rhs)
-    // {
-    //     return _mm512_sllv_epi64(lhs, rhs);
-    // }
+    inline batch<int64_t, 8> operator<<(const batch<int64_t, 8>& lhs, const batch<int64_t, 8>& rhs)
+    {
+        return _mm512_sllv_epi64(lhs, rhs);
+    }
 
-    // inline batch<int64_t, 8> operator>>(const batch<int64_t, 8>& lhs, const batch<int64_t, 8>& rhs)
-    // {
-    //     return _mm512_srlv_epi64(lhs, rhs);
-    // }
+    inline batch<int64_t, 8> operator>>(const batch<int64_t, 8>& lhs, const batch<int64_t, 8>& rhs)
+    {
+        return _mm512_srlv_epi64(lhs, rhs);
+    }
 }
 
 #endif

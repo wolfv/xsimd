@@ -46,7 +46,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU"
         include_directories(/usr/${ARM_ARCH_DIRECTORY}/include/)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=${TARGET_ARCH} -Wunused-parameter -Wextra -Wreorder -std=c++11")
     else()
-        CHECK_CXX_COMPILER_FLAG("-std=c++14" HAS_CPP11_FLAG)
+        CHECK_CXX_COMPILER_FLAG("-std=c++11" HAS_CPP11_FLAG)
         if (HAS_CPP11_FLAG)
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=skylake-avx512 -Wunused-parameter -Wextra -Wreorder -std=c++11")
         else()
@@ -103,22 +103,22 @@ set(XSIMD_TESTS
     xsimd_basic_test.cpp
     xsimd_basic_math_test.hpp
     xsimd_basic_math_test.cpp
-    # xsimd_error_gamma_test.hpp
-    # xsimd_error_gamma_test.cpp
-    # xsimd_exponential_test.hpp
-    # xsimd_exponential_test.cpp
-    # xsimd_fp_manipulation_test.hpp
-    # xsimd_fp_manipulation_test.cpp
-    # xsimd_hyperbolic_test.hpp
-    # xsimd_hyperbolic_test.cpp
-    # xsimd_interface_test.cpp
-    # xsimd_memory_test.cpp
-    # xsimd_power_test.hpp
-    # xsimd_power_test.cpp
-    # xsimd_rounding_test.hpp
-    # xsimd_rounding_test.cpp
-    # xsimd_tester.hpp
-    # xsimd_test_utils.hpp
+    xsimd_error_gamma_test.hpp
+    xsimd_error_gamma_test.cpp
+    xsimd_exponential_test.hpp
+    xsimd_exponential_test.cpp
+    xsimd_fp_manipulation_test.hpp
+    xsimd_fp_manipulation_test.cpp
+    xsimd_hyperbolic_test.hpp
+    xsimd_hyperbolic_test.cpp
+    xsimd_interface_test.cpp
+    xsimd_memory_test.cpp
+    xsimd_power_test.hpp
+    xsimd_power_test.cpp
+    xsimd_rounding_test.hpp
+    xsimd_rounding_test.cpp
+    xsimd_tester.hpp
+    xsimd_test_utils.hpp
     xsimd_trigonometric_test.hpp
     xsimd_trigonometric_test.cpp
 )

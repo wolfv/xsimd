@@ -15,10 +15,10 @@
 
 namespace xsimd
 {
-    template <class MASK>
+    template <class MASK, class T>
     class batch_bool_avx512;
 
-    template <class MASK>
+    template <class MASK, class T>
     class batch_bool_avx512
     {
     public:
@@ -39,13 +39,13 @@ namespace xsimd
         MASK m_value;
     };
 
-    template <class MASK>
-    inline batch_bool_avx512<MASK>::batch_bool_avx512()
+    template <class MASK, class T>
+    inline batch_bool_avx512<MASK, T>::batch_bool_avx512()
     {
     }
 
-    template <class MASK>
-    inline batch_bool_avx512<MASK>::batch_bool_avx512(bool b)
+    template <class MASK, class T>
+    inline batch_bool_avx512<MASK, T>::batch_bool_avx512(bool b)
         : m_value(b ? -1 : 0)
     {
     }
@@ -71,105 +71,72 @@ namespace xsimd
         }
     }
 
-    template <class MASK>
-    inline batch_bool_avx512<MASK>::batch_bool_avx512(const bool (&init)[sizeof(MASK) * 8])
+    template <class MASK, class T>
+    inline batch_bool_avx512<MASK, T>::batch_bool_avx512(const bool (&init)[sizeof(MASK) * 8])
         : m_value(detail::get_init_value<MASK>(init, detail::make_index_sequence<sizeof(MASK) * 8>{}))
     {
     }
 
-    // template <class MASK>
-    // inline batch_bool_avx512<MASK>::batch_bool_avx512(const __m512d& rhs)
-    //     : m_value(_mm512_cmp_pd_mask(rhs, _mm512_castsi512_pd(_mm512_set1_epi32(-1)), _CMP_EQ_OQ))
-    // {
-    // }
-
-    template <class MASK>
-    inline batch_bool_avx512<MASK>::batch_bool_avx512(const MASK& rhs)
+    template <class MASK, class T>
+    inline batch_bool_avx512<MASK, T>::batch_bool_avx512(const MASK& rhs)
         : m_value(rhs)
     {
     }
 
-    // template <class MASK>
-    // inline batch_bool_avx512<MASK>& batch_bool_avx512<MASK>::operator=(const __m512d& rhs)
-    // {
-    //     // m_value = rhs;
-    //     m_value = _mm512_cmp_pd_mask(rhs, _mm512_castsi512_pd(_mm512_set1_epi32(-1)), _CMP_EQ_OQ);
-    //     return *this;
-    // }
-
-    // template <class MASK>
-    // inline batch_bool_avx512<MASK>::operator __m512d() const
-    // {
-    //     // TODO wrong!
-    //     return (__m512d) _mm512_broadcastmb_epi64(m_value);
-    //     // return m_value;
-    // }
-
-    template <class MASK>
-    inline batch_bool_avx512<MASK>::operator MASK() const
+    template <class MASK, class T>
+    inline batch_bool_avx512<MASK, T>::operator MASK() const
     {
         return m_value;
     }
 
-    template <class MASK>
-    inline bool batch_bool_avx512<MASK>::operator[](std::size_t idx) const
+    template <class MASK, class T>
+    inline bool batch_bool_avx512<MASK, T>::operator[](std::size_t idx) const
     {
         return (m_value & (1 << idx)) != 0;
     }
 
-    template <class MASK>
-    inline batch_bool_avx512<MASK> operator&(const batch_bool_avx512<MASK>& lhs, const batch_bool_avx512<MASK>& rhs)
-    {
-        return MASK(lhs) & MASK(rhs);
-    }
+    template <std::size_t N> 
+    struct mask_type;
 
-    template <class MASK>
-    inline batch_bool_avx512<MASK> operator|(const batch_bool_avx512<MASK>& lhs, const batch_bool_avx512<MASK>& rhs)
+    template <>
+    struct mask_type<8>
     {
-        return MASK(lhs) | MASK(rhs);
-    }
+        using type = __mmask8;
+    };
 
-    template <class MASK>
-    inline batch_bool_avx512<MASK> operator^(const batch_bool_avx512<MASK>& lhs, const batch_bool_avx512<MASK>& rhs)
+    template <>
+    struct mask_type<16>
     {
-        return MASK(lhs) ^ MASK(rhs);
-    }
+        using type = __mmask16;
+    };
 
-    template <class MASK>
-    inline batch_bool_avx512<MASK> operator~(const batch_bool_avx512<MASK>& rhs)
-    {
-        return ~MASK(rhs);
-    }
+#define AVX512_BOOL_OPERATOR(T, N, OP, CNT)                                                        \
+    inline batch_bool<T, N> OP (const batch_bool<T, N>& lhs, const batch_bool<T, N>& rhs)          \
+    {                                                                                              \
+        using mt = typename mask_type<N>::type;                                                    \
+        return CNT;                                                                                \
+    }                                                                                              \
 
-    template <class MASK>
-    inline batch_bool_avx512<MASK> bitwise_andnot(const batch_bool_avx512<MASK>& lhs, const batch_bool_avx512<MASK>& rhs)
-    {
-        return ~(MASK(lhs) & MASK(rhs));
-    }
 
-    template <class MASK>
-    inline batch_bool_avx512<MASK> operator==(const batch_bool_avx512<MASK>& lhs, const batch_bool_avx512<MASK>& rhs)
-    {
-        return MASK(lhs) == MASK(rhs);
-    }
+#define AVX512_BOOL_UNARY_OPERATOR(T, N, OP, CNT)                                                  \
+    inline batch_bool<T, N> OP (const batch_bool<T, N>& rhs)                                       \
+    {                                                                                              \
+        using mt = typename mask_type<N>::type;                                                    \
+        return CNT;                                                                                \
+    }                                                                                              \
 
-    template <class MASK>
-    inline batch_bool_avx512<MASK> operator!=(const batch_bool_avx512<MASK>& lhs, const batch_bool_avx512<MASK>& rhs)
-    {
-        return MASK(lhs) != MASK(rhs);
-    }
 
-    template <class MASK>
-    inline bool all(const batch_bool_avx512<MASK>& rhs)
-    {
-        return MASK(rhs) == MASK(-1);
-    }
+#define GENERATE_AVX512_BOOL_OPS(T, N)                                 \
+    AVX512_BOOL_OPERATOR(T, N, operator==, (~mt(lhs)) ^ mt(rhs));      \
+    AVX512_BOOL_OPERATOR(T, N, operator!=, mt(lhs) ^ mt(rhs));         \
+    AVX512_BOOL_OPERATOR(T, N, operator&, mt(lhs) & mt(rhs));          \
+    AVX512_BOOL_OPERATOR(T, N, operator|, mt(lhs) | mt(rhs));          \
+    AVX512_BOOL_OPERATOR(T, N, operator^, mt(lhs) ^ mt(rhs));          \
+    AVX512_BOOL_OPERATOR(T, N, bitwise_andnot, mt(lhs) ^ mt(rhs));     \
+    AVX512_BOOL_UNARY_OPERATOR(T, N, operator~, ~mt(rhs));             \
+    AVX512_BOOL_UNARY_OPERATOR(T, N, all, mt(rhs) == mt(-1));          \
+    AVX512_BOOL_UNARY_OPERATOR(T, N, any, mt(rhs) != mt(0));           \
 
-    template <class MASK>
-    inline bool any(const batch_bool_avx512<MASK>& rhs)
-    {
-        return MASK(rhs) != 0;
-    }
 }
 
 #endif

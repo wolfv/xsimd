@@ -214,7 +214,7 @@ namespace xsimd
      * AVX implementation *
      **********************/
 
-#if XSIMD_X86_INSTR_SET >= XSIMD_X86_AVX_VERSION && XSIMD_X86_INSTR_SET < XSIMD_X86_AVX512_VERSION
+#if XSIMD_X86_INSTR_SET >= XSIMD_X86_AVX_VERSION
 
     template <>
     inline batch<float, 8> ceil(const batch<float, 8>& x)

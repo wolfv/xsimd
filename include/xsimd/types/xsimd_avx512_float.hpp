@@ -30,11 +30,11 @@ namespace xsimd
 
     template <>
     class batch_bool<float, 16> : 
-        public batch_bool_avx512<__mmask16>,
+        public batch_bool_avx512<__mmask16, batch_bool<float, 16>>,
         public simd_batch_bool<batch_bool<float, 16>>
     {
     public:
-        using base_class = batch_bool_avx512<__mmask16>;
+        using base_class = batch_bool_avx512<__mmask16, batch_bool<float, 16>>;
         using base_class::base_class;
 
         batch_bool(bool b0, bool b1,  bool b2,  bool b3,  bool b4,  bool b5,  bool b6,  bool b7,
@@ -44,6 +44,8 @@ namespace xsimd
         }
     };
 
+    GENERATE_AVX512_BOOL_OPS(float, 16);
+
     /*********************
      * batch<float, 16> *
      *********************/
@@ -52,8 +54,8 @@ namespace xsimd
     struct simd_batch_traits<batch<float, 16>>
     {
         using value_type = float;
-        static constexpr std::size_t size = 16;
         using batch_bool_type = batch_bool<float, 16>;
+        static constexpr std::size_t size = 16;
     };
 
     template <>
@@ -136,8 +138,11 @@ namespace xsimd
     batch<float, 16> fnms(const batch<float, 16>& x, const batch<float, 16>& y, const batch<float, 16>& z);
 
     float hadd(const batch<float, 16>& rhs);
+    batch<double, 8> haddp(const batch<double, 8>* row);
 
     batch<float, 16> select(const batch_bool<float, 16>& cond, const batch<float, 16>& a, const batch<float, 16>& b);
+
+    batch_bool<double, 8> isnan(const batch<double, 8>& x);
 
     /************************************
      * batch<float, 16> implementation *
@@ -388,7 +393,7 @@ namespace xsimd
 
     inline batch<float, 16> operator~(const batch<float, 16>& rhs)
     {
-        return _mm512_xor_ps(rhs, _mm512_set1_ps(-1));
+        return _mm512_xor_ps(rhs, _mm512_castsi512_ps(_mm512_set1_epi32(-1)));
     }
 
     inline batch<float, 16> bitwise_andnot(const batch<float, 16>& lhs, const batch<float, 16>& rhs)
@@ -433,7 +438,6 @@ namespace xsimd
 
     inline batch<float, 16> fma(const batch<float, 16>& x, const batch<float, 16>& y, const batch<float, 16>& z)
     {
-        // Note: support for _mm512_fmadd_ps in KNC ?
         return _mm512_fmadd_ps(x, y, z);
     }
 
@@ -460,6 +464,11 @@ namespace xsimd
     inline batch<float, 16> select(const batch_bool<float, 16>& cond, const batch<float, 16>& a, const batch<float, 16>& b)
     {
         return _mm512_mask_blend_ps(cond, b, a);
+    }
+
+    inline batch_bool<float, 16> isnan(const batch<float, 16>& x)
+    {
+        return _mm512_cmp_ps_mask(x, x, _CMP_UNORD_Q);
     }
 }
 

@@ -30,11 +30,11 @@ namespace xsimd
 
     template <>
     class batch_bool<int32_t, 16> : 
-        public batch_bool_avx512<__mmask16>,
+        public batch_bool_avx512<__mmask16, batch_bool<int32_t, 16>>,
         public simd_batch_bool<batch_bool<int32_t, 16>>
     {
     public:
-        using base_class = batch_bool_avx512<__mmask16>;
+        using base_class = batch_bool_avx512<__mmask16, batch_bool<int32_t, 16>>;
         using base_class::base_class;
 
         batch_bool(bool b0, bool b1,  bool b2,  bool b3,  bool b4,  bool b5,  bool b6,  bool b7,
@@ -43,6 +43,8 @@ namespace xsimd
         {
         }
     };
+
+    GENERATE_AVX512_BOOL_OPS(int32_t, 16);
 
     /*********************
      * batch<int32_t, 16> *
