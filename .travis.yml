@@ -132,6 +132,7 @@ install:
     # Useful for debugging any issues with conda
     - conda info -a
     - conda install gtest cmake -c conda-forge
+    - sh install_sde.sh
     - if [[ "$CROSS_COMPILE" == 1 ]] ; then
         if [[ "$ARM_ARCH_DIR" == "aarch64-linux-gnu" ]] ; then
           mkdir $HOME/linker_bin ;
@@ -157,5 +158,5 @@ script:
           qemu-arm -L /usr/arm-linux-gnueabi/ ./test_xsimd ;
         fi
       else
-        ./test_xsimd;
+        ../intel-sde-downloader/sde-external-8.16.0-2018-01-30-lin/sde64 -cnl -- ./test_xsimd;
       fi
