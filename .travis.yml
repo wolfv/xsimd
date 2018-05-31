@@ -158,5 +158,5 @@ script:
           qemu-arm -L /usr/arm-linux-gnueabi/ ./test_xsimd ;
         fi
       else
-        ../intel-sde-downloader/sde-external-8.16.0-2018-01-30-lin/sde64 -cnl -- ./test_xsimd;
+        ../intel-sde-downloader/sde-external-8.16.0-2018-01-30-lin/sde64 -cnl -injection child -- ./test_xsimd;
       fi
