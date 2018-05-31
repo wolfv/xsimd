@@ -423,7 +423,8 @@ namespace xsimd
 
     inline batch<float, 16> abs(const batch<float, 16>& rhs)
     {
-        return _mm512_abs_ps(rhs);
+        // return _mm512_abs_ps(rhs);
+        return (__m512) _mm512_and_epi32((__m512i) rhs, _mm512_set1_epi32 (0x7fffffff));
     }
 
     inline batch<float, 16> sqrt(const batch<float, 16>& rhs)
@@ -458,7 +459,11 @@ namespace xsimd
 
     inline float hadd(const batch<float, 16>& rhs)
     {
-        return _mm512_reduce_add_ps(rhs);
+        // return _mm512_reduce_add_ps(rhs);
+        __m256 tmp1 = _mm512_extractf32x8_ps(rhs, 1);
+        __m256 tmp2 = _mm512_extractf32x8_ps(rhs, 0);
+        __m256 res1 = tmp1 + tmp2;
+        return hadd(batch<float, 8>(res1));
     }
 
     inline batch<float, 16> select(const batch_bool<float, 16>& cond, const batch<float, 16>& a, const batch<float, 16>& b)

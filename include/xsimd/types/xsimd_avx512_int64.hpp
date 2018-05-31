@@ -394,7 +394,11 @@ namespace xsimd
 
     inline int64_t hadd(const batch<int64_t, 8>& rhs)
     {
-        return _mm512_reduce_add_epi64(rhs);
+        // return _mm512_reduce_add_epi64(rhs);
+        __m256i tmp1 = _mm512_extracti32x8_epi32(rhs, 0);
+        __m256i tmp2 = _mm512_extracti32x8_epi32(rhs, 1);
+        __m256i res1 = tmp1 + tmp2;
+        return hadd(batch<int64_t, 4>(res1));
     }
 
     inline batch<int64_t, 8> select(const batch_bool<int64_t, 8>& cond, const batch<int64_t, 8>& a, const batch<int64_t, 8>& b)

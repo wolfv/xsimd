@@ -395,8 +395,8 @@ namespace xsimd
 
     inline batch<double, 8> abs(const batch<double, 8>& rhs)
     {
-        __m512d sign_mask = _mm512_set1_pd(-0.);  // -0. = 1 << 63
-        return _mm512_andnot_pd(sign_mask, rhs);
+        // return _mm512_abs_pd(rhs);
+        return (__m512) _mm512_and_epi64(_mm512_set1_epi64(0x7FFFFFFFFFFFFFFF), (__m512i) rhs);
     }
 
     inline batch<double, 8> fabs(const batch<double, 8>& rhs)
@@ -431,7 +431,11 @@ namespace xsimd
 
     inline double hadd(const batch<double, 8>& rhs)
     {
-        return _mm512_reduce_add_pd(rhs);
+        // return _mm512_reduce_add_pd(rhs);
+        __m256d tmp1 = _mm512_extractf64x4_pd(rhs, 1);
+        __m256d tmp2 = _mm512_extractf64x4_pd(rhs, 0);
+        __m256d res1 = tmp1 + tmp2;
+        return hadd(batch<double, 4>(res1));
     }
 
     inline batch<double, 8> haddp(const batch<double, 8>* row)
