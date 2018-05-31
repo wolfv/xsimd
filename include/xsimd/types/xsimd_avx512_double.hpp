@@ -396,8 +396,8 @@ namespace xsimd
     inline batch<double, 8> abs(const batch<double, 8>& rhs)
     {
         // return _mm512_abs_pd(rhs);
-        return static_cast<__m512d>(_mm512_and_epi64(_mm512_set1_epi64(0x7FFFFFFFFFFFFFFF),
-                                                     static_cast<__m512i>(static_cast<__m512d>(rhs))));
+        return (__m512d) (_mm512_and_epi64(_mm512_set1_epi64(0x7FFFFFFFFFFFFFFF),
+                                           (__m512i)((__m512d)(rhs))));
     }
 
     inline batch<double, 8> fabs(const batch<double, 8>& rhs)

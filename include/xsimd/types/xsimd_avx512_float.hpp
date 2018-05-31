@@ -424,8 +424,8 @@ namespace xsimd
     inline batch<float, 16> abs(const batch<float, 16>& rhs)
     {
         // return _mm512_abs_ps(rhs);
-        return static_cast<__m512>(_mm512_and_epi32(static_cast<__m512i>(static_cast<__m512>(rhs)),
-                                                    _mm512_set1_epi32(0x7fffffff)));
+        return (__m512)(_mm512_and_epi32((__m512i) ((__m512) (rhs)),
+                                         _mm512_set1_epi32(0x7fffffff)));
     }
 
     inline batch<float, 16> sqrt(const batch<float, 16>& rhs)
