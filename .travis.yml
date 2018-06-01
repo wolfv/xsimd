@@ -38,7 +38,7 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-      env: COMPILER=gcc GCC=7 AVX512=1
+      env: AVX512=1
     - os: linux
       addons:
         apt:
@@ -153,6 +153,8 @@ install:
       elif [[ "$AVX512" == 1 ]] ; then
         conda install gcc_linux-64 ;
         sh install_sde.sh ;
+        export CXX=g++ CC=gcc ;
+        which g++ ;
         cmake . -DTARGET_ARCH=skylake-avx512 -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX;
       else
         cmake . ;
