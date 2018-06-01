@@ -40,6 +40,8 @@ matrix:
             - ubuntu-toolchain-r-test
       env: AVX512=1
     - os: linux
+      sudo: required
+      dist: trusty
       addons:
         apt:
           sources:
@@ -170,7 +172,8 @@ script:
           qemu-arm -L /usr/arm-linux-gnueabi/ ./test_xsimd ;
         fi
       elif [[ "$AVX512" == 1 ]] ; then
-        ../intel-sde-downloader/sde-external-8.16.0-2018-01-30-lin/sde64 -cnl -injection child -- ./test_xsimd;
+        sudo echo 0 > /proc/sys/kernel/yama/ptrace_scope ;
+        ../intel-sde-downloader/sde-external-8.16.0-2018-01-30-lin/sde64 -cnl -injection child -- ./test_xsimd ;
       else
         ./test_xsimd;
       fi
