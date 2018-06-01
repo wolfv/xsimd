@@ -441,7 +441,7 @@ namespace xsimd
 
     inline batch<double, 8> haddp(const batch<double, 8>* row)
     {
-        // row = (a,b,c,d)
+        // row = (a, b, c, d, e, f, g)
         // tmp0 = (a0+a1, b0+b1, a2+a3, b2+b3)
         // __m512d tmp0 = _mm512_hadd_pd(row[0], row[1]);
         // // tmp1 = (c0+c1, d0+d1, c2+c3, d2+d3)
