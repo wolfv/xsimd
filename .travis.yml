@@ -154,8 +154,9 @@ install:
         conda install gcc_linux-64 ;
         sh install_sde.sh ;
         export PATH="$HOME/miniconda/bin:$PATH" ;
-        which g++ ;
-        cmake . -DTARGET_ARCH=skylake-avx512 -DCMAKE_INSTALL_PREFIX=$HOME/miniconda;
+        export CC=x86_64-conda_cos6-linux-gnu-gcc CXX=x86_64-conda_cos6-linux-gnu-cpp ;
+        which $CXX ;
+        cmake . -DTARGET_ARCH=skylake-avx512 -DCMAKE_INSTALL_PREFIX=$HOME/miniconda ;
       else
         cmake . ;
       fi
