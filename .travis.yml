@@ -153,9 +153,9 @@ install:
       elif [[ "$AVX512" == 1 ]] ; then
         conda install gcc_linux-64 ;
         sh install_sde.sh ;
-        conda activate ;
+        export PATH="$HOME/miniconda/bin:$PATH" ;
         which g++ ;
-        cmake . -DTARGET_ARCH=skylake-avx512 -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX;
+        cmake . -DTARGET_ARCH=skylake-avx512 -DCMAKE_INSTALL_PREFIX=$HOME/miniconda;
       else
         cmake . ;
       fi
