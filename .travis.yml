@@ -153,7 +153,7 @@ install:
       elif [[ "$AVX512" == 1 ]] ; then
         conda install gcc_linux-64 ;
         sh install_sde.sh ;
-        export CXX=g++ CC=gcc ;
+        conda activate ;
         which g++ ;
         cmake . -DTARGET_ARCH=skylake-avx512 -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX;
       else
