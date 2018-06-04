@@ -439,18 +439,45 @@ namespace xsimd
         return hadd(batch<double, 4>(res1));
     }
 
+    // inline batch<double, 8> step1(batch<double, 8> a, batch<double, 8> b)
+    // {
+    //     auto tmp1 = _mm512_shuffle_f64x2(a, b, _MM_SHUFFLE(1, 0, 1, 0));
+    //     auto tmp2 = _mm512_shuffle_f64x2(a, b, _MM_SHUFFLE(3, 2, 3, 2));
+    //     auto res = (tmp1 + tmp2);
+    //     return res;
+    // }
+
     inline batch<double, 8> haddp(const batch<double, 8>* row)
     {
-        // row = (a, b, c, d, e, f, g)
-        // tmp0 = (a0+a1, b0+b1, a2+a3, b2+b3)
-        // __m512d tmp0 = _mm512_hadd_pd(row[0], row[1]);
-        // // tmp1 = (c0+c1, d0+d1, c2+c3, d2+d3)
-        // __m512d tmp1 = _mm512_hadd_pd(row[2], row[3]);
-        // // tmp2 = (a0+a1, b0+b1, c2+c3, d2+d3)
-        // __m512d tmp2 = _mm512_blend_pd(tmp0, tmp1, 0b1100);
-        // // tmp1 = (a2+a3, b2+b3, c2+c3, d2+d3)
-        // tmp1 = _mm512_permute2f128_pd(tmp0, tmp1, 0x21);
-        // return _mm512_add_pd(tmp1, tmp2);
+    #define step1(I, a, b)                                                   \
+        batch<double, 8> res ## I;                                           \
+        {                                                                    \
+            auto tmp1 = _mm512_shuffle_f64x2(a, b, _MM_SHUFFLE(1, 0, 1, 0)); \
+            auto tmp2 = _mm512_shuffle_f64x2(a, b, _MM_SHUFFLE(3, 2, 3, 2)); \
+            res ## I = (tmp1 + tmp2);                                        \
+        }                                                                    \
+
+        step1(1, row[0], row[2]);
+        step1(2, row[4], row[6]);
+        step1(3, row[1], row[3]);
+        step1(4, row[5], row[7]);
+
+    #undef step1
+
+        batch<double, 8> tmp5 = _mm512_shuffle_f64x2(res1, res2, _MM_SHUFFLE(2, 0, 2, 0));
+        batch<double, 8> tmp6 = _mm512_shuffle_f64x2(res1, res2, _MM_SHUFFLE(3, 1, 3, 1));
+
+        batch<double, 8> resx1 = (tmp5 + tmp6);
+
+        batch<double, 8> tmp7 = _mm512_shuffle_f64x2(res3, res4, _MM_SHUFFLE(2, 0, 2, 0));
+        batch<double, 8> tmp8 = _mm512_shuffle_f64x2(res3, res4, _MM_SHUFFLE(3, 1, 3, 1));
+
+        batch<double, 8> resx2 = (tmp7 + tmp8);
+
+        batch<double, 8> tmpx = _mm512_shuffle_pd(resx1, resx2, 0b00000000);
+        batch<double, 8> tmpy = _mm512_shuffle_pd(resx1, resx2, 0b11111111);
+
+        return tmpx + tmpy;
     }
 
     inline batch<double, 8> select(const batch_bool<double, 8>& cond, const batch<double, 8>& a, const batch<double, 8>& b)

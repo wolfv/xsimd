@@ -138,11 +138,11 @@ namespace xsimd
     batch<float, 16> fnms(const batch<float, 16>& x, const batch<float, 16>& y, const batch<float, 16>& z);
 
     float hadd(const batch<float, 16>& rhs);
-    batch<double, 8> haddp(const batch<double, 8>* row);
+    batch<float, 16> haddp(const batch<float, 16>* row);
 
     batch<float, 16> select(const batch_bool<float, 16>& cond, const batch<float, 16>& a, const batch<float, 16>& b);
 
-    batch_bool<double, 8> isnan(const batch<double, 8>& x);
+    batch_bool<float, 16> isnan(const batch<float, 16>& x);
 
     /************************************
      * batch<float, 16> implementation *
@@ -465,6 +465,57 @@ namespace xsimd
         __m256 tmp2 = _mm512_extractf32x8_ps(rhs, 0);
         __m256 res1 = tmp1 + tmp2;
         return hadd(batch<float, 8>(res1));
+    }
+
+    inline batch<float, 16> haddp(const batch<float, 16>* row)
+    {
+        #define step1(I, a, b)                                                   \
+            batch<float, 16> res ## I;                                           \
+            {                                                                    \
+                auto tmp1 = _mm512_shuffle_f32x4(a, b, _MM_SHUFFLE(1, 0, 1, 0)); \
+                auto tmp2 = _mm512_shuffle_f32x4(a, b, _MM_SHUFFLE(3, 2, 3, 2)); \
+                res ## I = (tmp1 + tmp2);                                        \
+            }                                                                    \
+
+            step1(1, row[ 0], row[ 2]);
+            step1(2, row[ 4], row[ 6]);
+            step1(3, row[ 1], row[ 3]);
+            step1(4, row[ 5], row[ 7]);
+            step1(5, row[ 8], row[10]);
+            step1(6, row[12], row[14]);
+            step1(7, row[ 9], row[11]);
+            step1(8, row[13], row[15]);
+
+        #undef step1
+
+            batch<float, 16> tmp5 = _mm512_shuffle_f32x4(res1, res2, _MM_SHUFFLE(2, 0, 2, 0));
+            batch<float, 16> tmp6 = _mm512_shuffle_f32x4(res1, res2, _MM_SHUFFLE(3, 1, 3, 1));
+            std::cout << "T5: " << tmp5 << std::endl;
+            std::cout << "T6: " << tmp6 << std::endl;
+
+            batch<float, 16> resx1 = (tmp5 + tmp6);
+
+            batch<float, 16> tmp7 = _mm512_shuffle_f32x4(res3, res4, _MM_SHUFFLE(2, 0, 2, 0));
+            batch<float, 16> tmp8 = _mm512_shuffle_f32x4(res3, res4, _MM_SHUFFLE(3, 1, 3, 1));
+            std::cout << "T7: " << tmp7 << std::endl;
+            std::cout << "T8: " << tmp8 << std::endl;
+
+            batch<float, 16> resx2 = (tmp7 + tmp8);
+            std::cout << "R1: " << resx1 << std::endl;
+            std::cout << "R2: " << resx2 << std::endl;
+
+            batch<float, 16> tmpx = _mm512_shuffle_ps(resx1, resx2, 0b00000000);
+            batch<float, 16> tmpy = _mm512_shuffle_ps(resx1, resx2, 0b11111111);
+
+            std::cout << "Tx: " << tmpx << std::endl;
+
+            batch<float, 16> tmpxx = tmpx + tmpy;
+            batch<float, 8> m1  = _mm256_hadd_ps(_mm512_extractf32x8_ps(tmpxx, 0),
+                                                 _mm512_extractf32x8_ps(tmpxx, 1));
+            std::cout << "m1: " << m1 << std::endl;
+            batch<float, 8> rp1 = _mm256_permute_ps(m1, _MM_SHUFFLE(3, 1, 2, 0));
+            std::cout << "RP1: " << rp1 << std::endl;
+            return tmpxx;
     }
 
     inline batch<float, 16> select(const batch_bool<float, 16>& cond, const batch<float, 16>& a, const batch<float, 16>& b)
